@@ -51,6 +51,30 @@ function update(e) {
     //hashto = setTimeout(updateHash, 1000);
 }
 
+/*
+This function is used to check for task list notation.
+If regex matches the string to task-list markdown format,
+then the task-list is rendered to its correct form.
+User: @austinmm
+*/
+var render_tasklist = function(str){
+    // Checked task-list box match
+	if(str.match(/<li>\[x\]\s+\w+/gi)){
+        str = str.replace(/(<li)(>\[x\]\s+)(\w+)/gi, 
+          `$1 style="list-style-type: none;"><input type="checkbox" 
+          checked style="list-style-type: none; 
+          margin: 0 0.2em 0 -1.3em;" disabled> $3`);
+    }
+    // Unchecked task-list box match
+    if (str.match(/<li>\[ \]\s+\w+/gi)){
+        str = str.replace(/(<li)(>\[ \]\s+)(\w+)/gi, 
+          `$1 style="list-style-type: none;"><input type="checkbox" 
+            style="list-style-type: none; 
+            margin: 0 0.2em 0 -1.3em;" disabled> $3`);
+    }
+    return str
+}
+
 function setOutput(val) {
     val = val.replace(/<equation>((.*?\n)*?.*?)<\/equation>/ig, function(a, b) {
         return '<img src="http://latex.codecogs.com/png.latex?' + encodeURIComponent(b) + '" />';
@@ -60,6 +84,9 @@ function setOutput(val) {
     var old = out.cloneNode(true);
     out.innerHTML = md.render(val);
     emojify.run(out);
+    console.log(out.innerHTML);
+    // Checks if there are any task-list present in out.innerHTML
+    out.innerHTML = render_tasklist(out.innerHTML);
 
     var allold = old.getElementsByTagName("*");
     if (allold === undefined) return;
@@ -100,7 +127,7 @@ function selectionChanger(selection,operator,endoperator){
     if(!endoperator){
         endoperator = operator
     }
-    var isApplied = selection.slice(0, 2) === operator && seisAppliedection.slice(-2) === endoperator;
+    var isApplied = selection.slice(0, 2) === operator && selection.slice(-2) === endoperator;
     var finaltext = isApplied ? selection.slice(2, -2) : operator + selection + endoperator;
     return finaltext;
 }
@@ -328,6 +355,9 @@ function start() {
 }
 
 window.addEventListener("beforeunload", function (e) {
+    if (!editor.getValue() || editor.getValue() == localStorage.getItem('content')) {
+        return;
+    }
     var confirmationMessage = 'It looks like you have been editing something. '
                             + 'If you leave before saving, your changes will be lost.';
     (e || window.event).returnValue = confirmationMessage; //Gecko + IE
